@@ -11,21 +11,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 /* ── Accounting / Ledger Style ── */
+/* ── Luxury ERP / Jewelry Operations Theme ── */
 :root{
-  --bg:#FFFFFF;--bg2:#F6F7F9;--bg3:#EDEFF2;
-  --tx:#1C2530;--tx2:#5A6675;--tx3:#9AA4B2;
-  --bd:rgba(28,37,48,0.09);--bd2:rgba(28,37,48,0.16);
-  --accent:#1B4D8C;--accent2:#2563A8;
+  --bg:#FFFFFF;
+  --bg2:#F8F6F1;
+  --bg3:#EFEAE2;
+  --tx:#1E252B;
+  --tx2:#64717C;
+  --tx3:#9A9287;
+  --bd:rgba(30,37,43,0.10);
+  --bd2:rgba(30,37,43,0.18);
+  --accent:#183442;
+  --accent2:#264B5B;
+  --gold:#B08A4A;
+  --gold2:#8A6A3F;
   --r:5px;--rl:7px;
   --font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
-  --shadow:0 1px 2px rgba(28,37,48,.06),0 1px 3px rgba(28,37,48,.05);
-  --shadow-lg:0 4px 16px rgba(28,37,48,.12),0 1px 4px rgba(28,37,48,.06);
-  --red:#C0392B;--red-bg:#FBEAE8;--red-tx:#A02D20;
-  --yel:#B8860B;--yel-bg:#FBF3E0;--yel-tx:#8A6508;
-  --grn:#1E7E45;--grn-bg:#E6F4EC;--grn-tx:#15622F;
-  --blu-bg:#E8F0F9;--blu-tx:#1B4D8C;
-  --pur-bg:#EEEAF6;--pur-tx:#5B3F8C;
-  --gry-bg:#EEF0F3;--gry-tx:#5A6675;
+  --shadow:0 1px 2px rgba(30,37,43,.055),0 1px 3px rgba(30,37,43,.045);
+  --shadow-lg:0 8px 24px rgba(30,37,43,.14),0 2px 8px rgba(30,37,43,.08);
+  --red:#A65A44;--red-bg:#F7EAE5;--red-tx:#7A3528;
+  --yel:#A67832;--yel-bg:#F6EDDA;--yel-tx:#74521C;
+  --grn:#47735A;--grn-bg:#E8F1EA;--grn-tx:#2F5B43;
+  --blu-bg:#E8EEF1;--blu-tx:#183442;
+  --pur-bg:#EFEAF4;--pur-tx:#5A476A;
+  --gry-bg:#F0EEE9;--gry-tx:#6A6258;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg3);color:var(--tx);font-size:13.5px;min-height:100vh;-webkit-font-smoothing:antialiased}
@@ -182,6 +191,37 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 .metal-card{border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:.875rem;overflow:hidden;box-shadow:var(--shadow)}
 .metal-head{background:var(--bg2);color:var(--accent);padding:.7rem 1.1rem;font-weight:600;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd2);text-transform:uppercase;letter-spacing:.02em}
 .warn{background:var(--yel-bg);color:var(--yel-tx);padding:.4rem .8rem;border-radius:var(--r);font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+
+/* ── Professional theme refinements: visual only, no logic changes ── */
+body{background:linear-gradient(180deg,#F4F1EC 0%, var(--bg3) 100%);} 
+.sidebar{background:#FBFAF7;box-shadow:inset -1px 0 0 rgba(176,138,74,.08)}
+.logo-title{color:var(--accent)}
+.logo-title i{color:var(--gold)}
+.logo-sub{color:#8D8376}
+.nav-sec{color:#A09588}
+.nav-item:hover{background:#F2EEE6;color:var(--accent)}
+.nav-item.active{background:linear-gradient(90deg,rgba(176,138,74,.18),rgba(232,238,241,.55));color:var(--accent);border-left-color:var(--gold);font-weight:600}
+.main{background:transparent}
+.card,.metric,.sp-view,.metal-card{border-color:rgba(30,37,43,.10);box-shadow:0 1px 2px rgba(30,37,43,.05),0 6px 18px rgba(30,37,43,.045)}
+.ch,.metal-head,.sp-header,th{background:#FAF8F4}
+.ct{color:#1C2E36}
+.metric{border-top:2px solid rgba(176,138,74,.35)}
+.ml{color:#8E877D}.mv{color:#17252C}
+td{border-bottom-color:rgba(30,37,43,.075)}
+tr:nth-child(even) td{background:#FAF8F4}
+tr:hover td{background:#F2EEE6}
+.tag{background:#F6F3EC;color:#6C6257;border-color:rgba(176,138,74,.22)}
+.btn{background:#FFFFFF;border-color:rgba(30,37,43,.16)}
+.btn:hover{background:#F4F1EC}
+.btnp{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnp:hover{background:var(--accent2);border-color:var(--accent2)}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(176,138,74,.18)}
+.pb{background:#E8E2D8;border-color:rgba(30,37,43,.10)}
+.qb:hover{background:#F2EEE6;color:var(--accent);border-color:var(--gold)}
+.qb.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.mob-nav{background:#FBFAF7;border-top-color:rgba(30,37,43,.16)}
+.mob-nav-item.active{color:var(--gold2)}
+.toast{background:#1E252B}
 
 </style>
 </head>
