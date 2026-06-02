@@ -138,15 +138,18 @@ td input,td select{padding:4px 7px;font-size:11.5px;border-radius:4px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
 .dclose{position:absolute;top:1.25rem;right:1.25rem;cursor:pointer;color:var(--tx3);border:none;background:none;font-size:18px}
 .dclose:hover{color:var(--tx)}
-.tw{overflow-x:auto}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.tw table{min-width:760px}
+.tw::after{content:"Swipe left/right to see more columns";display:none;font-size:10px;color:var(--tx3);padding:6px 10px;background:var(--bg2);border-top:1px solid var(--bd)}
 /* STONE PURCHASE */
 .sp-view{border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:.875rem;overflow:hidden;box-shadow:var(--shadow)}
 .sp-header{background:var(--bg2);color:var(--accent);padding:.8rem 1.1rem;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd2);text-transform:uppercase;letter-spacing:.02em}
 /* MOBILE BOTTOM NAV */
 .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--bd2);z-index:100;padding:6px 0 env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(28,37,48,.08)}
-.mob-nav-items{display:flex;justify-content:space-between;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;cursor:pointer;color:var(--tx3);font-size:9px;min-width:48px;flex:1 0 auto;border-radius:6px;transition:all .12s;text-transform:uppercase;letter-spacing:.02em}
+.mob-nav-items{display:flex;justify-content:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;cursor:pointer;color:var(--tx3);font-size:9px;min-width:54px;flex:0 0 auto;border-radius:6px;transition:all .12s;text-transform:uppercase;letter-spacing:.02em;scroll-snap-align:start}
 .mob-nav-item.active{color:var(--accent)}
+.mob-nav-item.danger{color:var(--red)}
 .mob-nav-item i{font-size:19px}
 /* PRINT */
 @media print{.sidebar,.mob-nav,.frow,.btn,.btns,.btnd{display:none!important}.app{grid-template-columns:1fr}.sp-view{break-inside:avoid}}
@@ -155,13 +158,24 @@ td input,td select{padding:4px 7px;font-size:11.5px;border-radius:4px}
   .app{grid-template-columns:1fr}
   .sidebar{display:none}
   .mob-nav{display:block}
-  .main{padding:1rem;padding-bottom:80px}
+  .main{padding:1rem;padding-bottom:92px;overflow-x:hidden}
   .two{grid-template-columns:1fr}
-  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric{padding:.85rem}
+  .mv{font-size:21px}
   .fr{grid-template-columns:1fr}
   .dp{width:100vw}
+  .card{overflow:hidden}
+  .ch{padding:.75rem .85rem}
+  .cb{padding:.9rem}
+  .frow{display:grid;grid-template-columns:1fr;gap:8px;padding-left:0!important;padding-right:0!important}
+  .frow input,.frow select,.frow button{width:100%;max-width:none!important}
+  .tw{margin:0 -1px;overflow-x:auto}
+  .tw table{min-width:860px}
+  .tw::after{display:block}
   th,td{padding:6px 8px;font-size:11.5px}
   .pt{font-size:17px}
+  .modal{width:94vw;padding:1.15rem}
 }
 
 input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
@@ -214,10 +228,16 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
     <div class="mob-nav-item" data-page="stone_order"><i class="ti ti-triangle"></i>Stones</div>
     <div class="mob-nav-item" data-page="stone_purchase"><i class="ti ti-receipt"></i>Buy</div>
     <div class="mob-nav-item" data-page="repair"><i class="ti ti-bandage"></i>Repair</div>
-    <div class="mob-nav-item" data-page="prod_master" data-module="production"><i class="ti ti-layout-list"></i>Planing</div>
+    <div class="mob-nav-item" data-page="prod_master" data-module="production"><i class="ti ti-layout-list"></i>Plan</div>
     <div class="mob-nav-item" data-page="prod_casting" data-module="production"><i class="ti ti-flame"></i>Casting</div>
+    <div class="mob-nav-item" data-page="prod_filling" data-module="production"><i class="ti ti-tool"></i>Filing</div>
+    <div class="mob-nav-item" data-page="prod_setting" data-module="production"><i class="ti ti-diamond"></i>Setting</div>
+    <div class="mob-nav-item" data-page="prod_polish" data-module="production"><i class="ti ti-sparkles"></i>Polish</div>
     <div class="mob-nav-item" data-page="settings"><i class="ti ti-adjustments"></i>Settings</div>
     <div class="mob-nav-item" data-page="ai"><i class="ti ti-help"></i>Guide</div>
+    <div class="mob-nav-item" onclick="backupData()"><i class="ti ti-download"></i>Backup</div>
+    <div class="mob-nav-item" onclick="g('restore-file').click()"><i class="ti ti-upload"></i>Restore</div>
+    <div class="mob-nav-item danger" onclick="clearAllData()"><i class="ti ti-trash"></i>Clear</div>
   </div>
 </div>
 <main class="main">
@@ -373,7 +393,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 </div>
 
 <!-- ============ PRODUCTION MASTER ============ -->
-<div class="page active" id="page-prod_master">
+<div class="page" id="page-prod_master">
 <div class="ph"><div class="pt">Planing</div><div class="ps">Select items from Order Pool and send to Casting Master</div></div>
 
 <div class="card">
@@ -806,12 +826,14 @@ function restoreData(input){
 
 // NAV (sidebar + mobile)
 function navTo(page){
+  const target=g('page-'+page);
+  if(!page||!target) return;
   document.querySelectorAll('.nav-item,.mob-nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll(`[data-page="${page}"]`).forEach(n=>n.classList.add('active'));
-  g('page-'+page).classList.add('active');
+  target.classList.add('active');
 }
-document.querySelectorAll('.nav-item,.mob-nav-item').forEach(el=>{
+document.querySelectorAll('.nav-item[data-page],.mob-nav-item[data-page]').forEach(el=>{
   el.addEventListener('click',()=>navTo(el.dataset.page));
 });
 
