@@ -1326,10 +1326,9 @@ function syncJobsFromPool(rows){
       existing.article=p.article;
       existing.size=p.size;
       existing.metal=p.metal;
-      // Keep stone fields in Job Master so mobile / Production Overview can display them.
-      existing.stoneType = p.stoneType || existing.stoneType || '';
-      existing.stoneDia = p.stoneDia || p.stoneSize || existing.stoneDia || '';
-      existing.totalStones = p.totalStones || existing.totalStones || '';
+      existing.stoneType=p.stoneType || existing.stoneType || '';
+      existing.stoneDia=p.stoneDia || p.stoneSize || existing.stoneDia || '';
+      existing.totalStones=p.totalStones || existing.totalStones || '';
       if(qty>0){
         existing.qty=qty;
         existing.balance=qty-(+existing.received||0);
@@ -1342,12 +1341,11 @@ function syncJobsFromPool(rows){
         orderDate:new Date().toLocaleDateString('en-GB'),
         orderNo:p.orderNo, no, itemKey:p.itemKey,
         itemType:p.type, article:p.article, size:p.size,
-        qty, repair:0, received:0, balance:qty,
-        metal:p.metal,
         stoneType:p.stoneType || '',
         stoneDia:p.stoneDia || p.stoneSize || '',
         totalStones:p.totalStones || '',
-        factory:FACTORIES[0]||'PKL',
+        qty, repair:0, received:0, balance:qty,
+        metal:p.metal, factory:FACTORIES[0]||'PKL',
         stoneComplete:'', finishDate:''
       });
       created++;
@@ -1374,30 +1372,67 @@ function buildItemKey(r){
   return parts.join('-');
 }
 
-// Find the Order Pool source row for a Job Master item.
-// Used to backfill old localStorage jobs that were created before stone fields were saved.
+
+// Infer stone fields for legacy Job Master rows.
+// This is needed when old localStorage jobs do not have stoneType,
+// but the itemKey still contains the stone name.
+function inferStoneFromItemKey(j){
+  const out={stoneType:'',stoneDia:'',totalStones:''};
+  if(!j || !j.itemKey) return out;
+
+  // Prefer exact linked data first.
+  const so=(D.stoneOrders||[]).filter(s=>s.itemKey===j.itemKey);
+  if(so.length){
+    out.stoneType=so.map(s=>s.stoneType||'').filter(Boolean).join('<br>');
+    out.stoneDia=so.map(s=>s.stoneDia||s.stoneSize||'').filter(Boolean).join('<br>');
+    out.totalStones=so.reduce((sum,s)=>sum+(+s.totalQty||0),0)||'';
+    return out;
+  }
+
+  let rest=String(j.itemKey||'').trim();
+
+  // Remove known left-side fields without splitting by hyphen,
+  // because order numbers can also contain hyphens, e.g. JD00-000084.
+  [j.orderNo,j.article,j.metal,j.size,j.qty].forEach(v=>{
+    v=String(v||'').trim();
+    if(v && rest.startsWith(v+'-')) rest=rest.slice(v.length+1);
+  });
+
+  // Remove known right-side fields.
+  const sd=String(j.stoneDia||'').trim();
+  if(sd && rest.endsWith('-'+sd)) rest=rest.slice(0,-(sd.length+1));
+  rest=rest.replace(/-\d+$/,''); // legacy suffix 00/01/02
+  rest=rest.replace(/^-+|-+$/g,'').trim();
+
+  // Guard against non-stone leftovers.
+  if(rest && rest!==String(j.size||'') && rest!==String(j.qty||'')){
+    out.stoneType=rest;
+  }
+  return out;
+}
+
 function findPoolRowForJob(j){
-  const pool = D.pool || [];
-  return pool.find(p => p.itemKey && j.itemKey && p.itemKey === j.itemKey)
-      || pool.find(p =>
-        (p.orderNo || '') === (j.orderNo || '') &&
-        (p.article || '') === (j.article || '') &&
-        (p.metal || '') === (j.metal || '') &&
-        String(p.size || '') === String(j.size || '') &&
-        String(p.qty || '') === String(j.qty || '')
+  const pool=D.pool||[];
+  return pool.find(p=>p.parentItemKey && j.itemKey && p.parentItemKey===j.itemKey && p.stoneType)
+      || pool.find(p=>p.itemKey && j.itemKey && p.itemKey===j.itemKey)
+      || pool.find(p=>
+        (p.orderNo||'')===(j.orderNo||'') &&
+        (p.article||'')===(j.article||'') &&
+        (p.metal||'')===(j.metal||'') &&
+        String(p.size||'')===String(j.size||'') &&
+        String(p.qty||'')===String(j.qty||'')
       )
       || {};
 }
 
-// Backfill stone fields into Job Master records for desktop + mobile.
-// This does not overwrite existing values; it only fills blanks.
 function hydrateJobStoneFields(){
-  normalizePoolParentKeys(D.pool || []);
-  (D.jobs || []).forEach(j => {
-    const p = findPoolRowForJob(j);
-    if(!j.stoneType) j.stoneType = p.stoneType || '';
-    if(!j.stoneDia) j.stoneDia = p.stoneDia || p.stoneSize || '';
-    if(!j.totalStones) j.totalStones = p.totalStones || '';
+  (D.jobs||[]).forEach(j=>{
+    const p=findPoolRowForJob(j);
+    const inferred=inferStoneFromItemKey(j);
+
+    if(!j.stoneType) j.stoneType = p.stoneType || inferred.stoneType || '';
+    if(!j.stoneDia) j.stoneDia = p.stoneDia || p.stoneSize || inferred.stoneDia || '';
+    if(!j.totalStones) j.totalStones = p.totalStones || inferred.totalStones || '';
   });
 }
 
@@ -1991,9 +2026,8 @@ function P_importPoolData(){
   src.forEach(j=>{
     if(known.has(j.itemKey)){skipped++;return;}
     known.add(j.itemKey);
-    // Find matching pool row for metal weight / stone data
-    const poolRow = findPoolRowForJob(j);
-    const stones = getStonesForItem(j.orderNo, j.article, j.itemKey);
+    // Find matching pool row for metal weight data
+    const poolRow = (D.pool||[]).find(p=>p.itemKey===j.itemKey) || {};
     PD.casting.push({
       itemKey: j.itemKey,
       orderNo: j.orderNo,
@@ -2004,9 +2038,9 @@ function P_importPoolData(){
       qty: j.qty,
       totalWt: poolRow.totalWt || '',
       wtPurity: poolRow.wtPurity || '',
-      stoneType: j.stoneType || poolRow.stoneType || stones.typesStr || '',
-      stoneDia: j.stoneDia || poolRow.stoneDia || stones.diasStr || '',
-      totalStones: j.totalStones || poolRow.totalStones || stones.countStr || '',
+      stoneType: j.stoneType || poolRow.stoneType || '',
+      stoneDia: j.stoneDia || poolRow.stoneDia || '',
+      totalStones: poolRow.totalStones || '',
       castDate: '',
       receivedDate: '',
       receivedWeight: '',
@@ -2357,7 +2391,14 @@ function getStonesForItem(orderNo, article, itemKey){
   if(!soMatches.length && !key){
     soMatches=(D.stoneOrders||[]).filter(s=>s.orderNo===orderNo && s.article===article);
   }
-  if(!soMatches.length) return empty;
+  if(!soMatches.length){
+    const j=(D.jobs||[]).find(x=>x.itemKey===key) || {};
+    const inferred=inferStoneFromItemKey(j);
+    if(inferred.stoneType){
+      return {types:[inferred.stoneType],dias:inferred.stoneDia?[inferred.stoneDia]:[],counts:[],totalCount:0,typesStr:inferred.stoneType,diasStr:inferred.stoneDia||'—',countStr:inferred.totalStones||'—',raw:[]};
+    }
+    return empty;
+  }
   const types  = soMatches.map(s=>s.stoneType||'').filter(Boolean);
   const dias   = soMatches.map(s=>s.stoneDia||s.stoneSize||'').filter(Boolean);
   const counts = soMatches.map(s=>+s.totalQty||0);
@@ -2650,19 +2691,17 @@ function PM_renderPool(){
 function togglePMPoolAll(cb){document.querySelectorAll('.pm-pool-cb:not([disabled])').forEach(x=>x.checked=cb.checked);}
 
 function PM_loadFromJobMaster(){
-  hydrateJobStoneFields();
   PM_items = (D.jobs||[]).map(j=>{
-    const poolRow = findPoolRowForJob(j);
-    const stones = getStonesForItem(j.orderNo, j.article, j.itemKey);
+    const poolRow = (D.pool||[]).find(p=>p.itemKey===j.itemKey)||{};
     return {
       ...j,
-      // Fallback stoneType + stoneDia to pool / Stone Orders if job's value is empty
-      stoneType: j.stoneType || poolRow.stoneType || stones.typesStr || '',
-      stoneDia: j.stoneDia || poolRow.stoneDia || stones.diasStr || '',
+      // Fallback stoneType + stoneDia to pool data if job's value is empty
+      stoneType: j.stoneType || poolRow.stoneType || '',
+      stoneDia: j.stoneDia || poolRow.stoneDia || '',
       totalWt: poolRow.totalWt||'',
       wtPurity: poolRow.wtPurity||'',
       stoneSizing: poolRow.stoneSizing||'',
-      totalStones: j.totalStones || poolRow.totalStones || stones.countStr || ''
+      totalStones: poolRow.totalStones||''
     };
   });
   PM_render();
@@ -3075,7 +3114,7 @@ function GL_exportPDF(){
   P_toast('PDF exported');
 }
 
-function P_renderAll(){hydrateJobStoneFields();PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();GL_render();}
+function P_renderAll(){PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();GL_render();}
 P_loadData();P_renderAll();
 
 
