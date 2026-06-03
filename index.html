@@ -822,6 +822,8 @@ let D={};
 let FACTORIES=['PKL','Dabaan','Ideal'];
 const SK='jeweltrack_v4';
 function loadData(){try{const s=localStorage.getItem(SK);if(s){const p=JSON.parse(s);D={...JSON.parse(JSON.stringify(SEED)),...p};if(p.factories)FACTORIES=p.factories;if(p.suppliers)SUPPLIERS=p.suppliers;}}catch(e){D=JSON.parse(JSON.stringify(SEED));} if(!D.orders)D=JSON.parse(JSON.stringify(SEED));
+  // repair legacy data
+  migrateItemStoneLinks();
   // ensure every job with repair>0 has a matching auto repair entry
   D.jobs.forEach(j=>{if((+j.repair||0)>0)syncRepairForJob(j);});
 }
@@ -1048,7 +1050,7 @@ function renderJobs(){
     // supplier match: any stone order linked to this job's itemKey uses that supplier
     let supOK=true;
     if(qsup){
-      const linked=D.stoneOrders.filter(s=>s.itemKey===r.itemKey||(s.orderNo===r.orderNo&&s.article===r.article));
+      const linked=D.stoneOrders.filter(s=>s.itemKey===r.itemKey || (!s.itemKey && s.orderNo===r.orderNo&&s.article===r.article));
       supOK=linked.some(s=>(s.supplier+'').toLowerCase().includes(qsup));
     }
     return (r.orderNo+'').toLowerCase().includes(qo)&&
@@ -1069,7 +1071,7 @@ function renderJobs(){
       <td><strong>${r.orderNo||''}</strong></td>
       <td><span class="tag">${r.itemType||''}</span></td>
       <td>${r.article||''}</td>
-      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.typesStr||r.stoneType||'—';})()}</td>
       <td>${r.size||'—'}</td>
       <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
       <td><span class="tag">${r.factory||'—'}</span></td>
@@ -1088,7 +1090,7 @@ function renderJobs(){
 
 // Auto-derive Stone status from Stone Orders for this job
 function getJobStoneStatus(j){
-  const stones=D.stoneOrders.filter(s=>s.orderNo===j.orderNo&&s.article===j.article);
+  const stones=D.stoneOrders.filter(s=>s.itemKey===j.itemKey || (!s.itemKey && s.orderNo===j.orderNo&&s.article===j.article));
   if(!stones.length) return '<span class="badge bgr">—</span>';
   const allComplete=stones.every(s=>(+s.balance||0)<=0);
   const anyReceived=stones.some(s=>(+s.received||0)>0);
@@ -1131,6 +1133,70 @@ function renderPool(){
     <td>${r.stoneType||''}</td><td>${r.stoneSizing||''}</td><td>${r.stoneDia||''}</td>
     <td>${r.stoneQtyPer||''}</td><td>${r.totalStones||''}</td>
   </tr>`).join(''));
+}
+
+
+function poolGroupKey(r){
+  return [r.orderNo||'',r.article||''].map(x=>(x+'').trim()).join('|');
+}
+function rowHasItemQty(r){return (parseInt(r.qty)||0)>0;}
+function sameStone(a,b){
+  return (a.stoneType||'')===(b.stoneType||'') &&
+    ((a.stoneDia||a.stoneSize||'')===(b.stoneDia||b.stoneSize||'')) &&
+    ((a.stoneSizing||a.stoneWt||'')===(b.stoneSizing||b.stoneWt||''));
+}
+function normalizePoolParentKeys(rows){
+  if(!Array.isArray(rows)) return rows||[];
+
+  // 1) Make only real item rows (qty > 0) unique. Stone sub-rows inherit a parent key later.
+  const autoSeen={};
+  rows.forEach(row=>{
+    if(rowHasItemQty(row) && !row.itemKey){row.itemKey=buildItemKey(row);row._autoKey=true;}
+    if(rowHasItemQty(row) && row._autoKey){
+      const base=row.itemKey;
+      if(autoSeen[base]==null){autoSeen[base]=0;}
+      else{
+        autoSeen[base]++;
+        row.itemKey=base.replace(/-(\d+)$/,(m,n)=>'-'+String(+n+autoSeen[base]).padStart(2,'0'));
+        if(row.itemKey===base) row.itemKey=base+'-'+String(autoSeen[base]+1).padStart(2,'0');
+      }
+    }
+  });
+
+  // 2) Link every stone row to the nearest parent item row above it.
+  // This fixes articles that repeat in multiple sizes, e.g. kc04210460 size 16 and 16.5.
+  const lastParentByOrderArticle={};
+  let lastParent='';
+  rows.forEach(row=>{
+    const gk=poolGroupKey(row);
+    if(rowHasItemQty(row)){
+      row.parentItemKey=row.itemKey;
+      lastParentByOrderArticle[gk]=row.itemKey;
+      lastParent=row.itemKey;
+    }else{
+      row.parentItemKey=row.parentItemKey || lastParentByOrderArticle[gk] || lastParent || row.itemKey || '';
+      if(row.parentItemKey && !row.itemKey) row.itemKey=row.parentItemKey;
+    }
+  });
+  return rows;
+}
+function migrateItemStoneLinks(){
+  D.pool=normalizePoolParentKeys(D.pool||[]);
+  // Backfill Stone Orders created by older versions so future lookups can use itemKey.
+  (D.stoneOrders||[]).forEach(so=>{
+    if(!so.itemKey){
+      const match=(D.pool||[]).find(p=>
+        p.parentItemKey && p.orderNo===so.orderNo && p.article===so.article &&
+        (p.stoneType||'')===(so.stoneType||'') &&
+        ((p.stoneDia||'')===(so.stoneDia||so.stoneSize||''))
+      );
+      if(match) so.itemKey=match.parentItemKey;
+    }
+    if(so.itemKey && !so.parentItemKey) so.parentItemKey=so.itemKey;
+  });
+  (D.stonePurchase||[]).forEach(sp=>{
+    if(!sp.itemKey && sp.jobId && !(sp.jobId+'').includes('|')) sp.itemKey=sp.jobId;
+  });
 }
 
 function importPoolData(){
@@ -1218,21 +1284,8 @@ function importPoolData(){
 
   if(!rows.length){toast('Could not parse — include the header row when copying');return;}
 
-  // Make auto-generated item keys unique within this batch.
-  // Keys that came straight from the sheet (its own formula) are trusted as-is —
-  // if THOSE collide, the rows really are duplicates and will be skipped on sync.
-  const autoSeen={};
-  rows.forEach(row=>{
-    if(row._autoKey){
-      const base=row.itemKey;
-      if(autoSeen[base]==null){autoSeen[base]=0;}
-      else{
-        autoSeen[base]++;
-        // bump trailing -01 / -00 suffix to keep distinct rows separate
-        row.itemKey=base.replace(/-(\d+)$/,(m,n)=>'-'+String(+n+autoSeen[base]).padStart(2,'0'));
-      }
-    }
-  });
+  // Build parentItemKey so stone sub-rows stay attached to the correct item / size.
+  normalizePoolParentKeys(rows);
 
   D.pool=rows;
   const r=syncJobsFromPool(rows);
@@ -1316,37 +1369,54 @@ function buildItemKey(r){
 // ── STONE ORDERS: auto-generated from Order Pool (every row with a stoneType) ──
 // Preserves user edits (supplier, orderedDate, received, receivedDate) for existing entries.
 function syncStoneOrdersFromPool(rows){
+  rows=normalizePoolParentKeys(rows||[]);
+  const currentKeys=new Set();
   rows.forEach(p=>{
     if(!p.stoneType) return; // skip rows with no stone data
-    // Use a composite key: orderNo + article + stoneType + stoneDia (covers sub-rows)
-    const soKey = [p.orderNo, p.article, p.stoneType, p.stoneDia].filter(Boolean).join('|');
-    // Determine total stones for this row
+    const parentKey = p.parentItemKey || (rowHasItemQty(p)?p.itemKey:'');
+    if(!parentKey) return;
+
+    // Composite key must include parent itemKey. This prevents same article in different sizes
+    // from sharing stones incorrectly.
+    const soKey = [parentKey, p.stoneType, p.stoneDia||'', p.stoneSizing||''].join('|');
+    currentKeys.add(soKey);
+
     const totalQty = parseInt(p.totalStones) || parseInt(p.stoneQtyPer) || 0;
-    // Find parent job row (qty > 0, same orderNo+article) to get itemType
-    const parentJob = rows.find(r => r.orderNo===p.orderNo && r.article===p.article && (parseInt(r.qty)||0)>0);
-    const itemType = parentJob ? parentJob.type : (p.type||'');
-    const existing = D.stoneOrders.find(s => s._poolKey===soKey);
+    const parentRow = rows.find(r => r.itemKey===parentKey && rowHasItemQty(r)) || {};
+    const itemType = parentRow.type || p.type || '';
+
+    // Preserve edits from both the fixed key and older generated keys.
+    const existing = D.stoneOrders.find(s =>
+      s._poolKey===soKey ||
+      (s.itemKey===parentKey && (s.stoneType||'')===(p.stoneType||'') && ((s.stoneDia||s.stoneSize||'')===(p.stoneDia||'')))
+    );
+
     if(existing){
-      // Update quantities but preserve supplier/dates/received if already set
-      existing.totalQty = totalQty;
-      existing.stoneSize = p.stoneSizing || '';  // Stone wt (weight range)
-      existing.stoneDia = p.stoneDia || '';          // Stone Size (dimension)
-      existing.stoneWt = p.stoneSizing || '';         // alias
+      existing._poolKey = soKey;
+      existing.itemKey = parentKey;
+      existing.parentItemKey = parentKey;
+      existing.orderNo = p.orderNo;
       existing.itemType = itemType;
       existing.article = p.article;
-      // Recalculate balance
+      existing.stoneType = p.stoneType;
+      existing.stoneSize = p.stoneSizing || '';
+      existing.stoneDia = p.stoneDia || '';
+      existing.stoneWt = p.stoneSizing || '';
+      existing.totalQty = totalQty;
       existing.balance = existing.totalQty - (parseInt(existing.received)||0);
       existing.complete = existing.balance <= 0 ? 'TRUE' : 'FALSE';
     } else {
       D.stoneOrders.push({
         _poolKey: soKey,
+        itemKey: parentKey,
+        parentItemKey: parentKey,
         orderNo: p.orderNo,
         itemType: itemType,
         article: p.article,
         stoneType: p.stoneType,
-        stoneSize: p.stoneSizing || '',  // Stone wt (weight range e.g. 6,00-6,99)
-        stoneDia: p.stoneDia || '',          // Stone Size (dimension e.g. 11.5x11.5)
-        stoneWt: p.stoneSizing || '',        // alias for display
+        stoneSize: p.stoneSizing || '',
+        stoneDia: p.stoneDia || '',
+        stoneWt: p.stoneSizing || '',
         totalQty: totalQty,
         supplier: SUPPLIERS[0] || '',
         orderedDate: '',
@@ -1370,7 +1440,8 @@ function syncStonePurchaseFromPool(){
       _auto: true,
       _poolKey: spKey,
       supplier: so.supplier || SUPPLIERS[0] || '',
-      jobId: spKey,
+      jobId: so.itemKey || spKey,
+      itemKey: so.itemKey || '',
       orderNo: so.orderNo,
       itemType: so.itemType,
       article: so.article,
@@ -1425,7 +1496,7 @@ function renderStonePurchase(){
   const qs=gv('sp-search').toLowerCase();const st=gv('sp-status-f');const selSup=gv('sp-supplier-f');
   // Hide rows that are fully received (stone status = COMPLETE in Stone Orders)
   const isComplete=r=>{
-    const so=D.stoneOrders.find(s=>s.itemKey===r.jobId||(s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
+    const so=D.stoneOrders.find(s=>s._poolKey===r._poolKey || s.itemKey===r.jobId || (!s.itemKey && s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
     if(so) return (+so.balance||0)<=0 || so.complete==='TRUE';
     return r.status==='RECEIVED' || (+r.balance||0)<=0;
   };
@@ -1443,7 +1514,7 @@ function renderStonePurchase(){
         <thead><tr><th>Order no</th><th>Type</th><th>Stone type</th><th>Stone size</th><th>Total</th><th>Balance</th><th>Ordered</th><th>Status</th></tr></thead>
         <tbody>${rows.map(r=>{const i=D.stonePurchase.indexOf(r);
           // balance from matching stone order
-          const soMatch=D.stoneOrders.find(s=>s.itemKey===r.jobId||s.orderNo===r.orderNo&&s.stoneType===r.stoneType);
+          const soMatch=D.stoneOrders.find(s=>s._poolKey===r._poolKey || s.itemKey===r.jobId || (!s.itemKey && s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
           const displayBal=soMatch!==undefined?soMatch.balance:r.balance;
           return`<tr>
           <td>${r.orderNo}</td>
@@ -1480,7 +1551,7 @@ function exportStonePurchaseExcel(){
   // one sheet per supplier
   sups.forEach(sup=>{
     const rows=all.filter(r=>r.supplier===sup).map(r=>{
-      const soMatch=D.stoneOrders.find(s=>s.itemKey===r.jobId||(s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
+      const soMatch=D.stoneOrders.find(s=>s._poolKey===r._poolKey || s.itemKey===r.jobId || (!s.itemKey && s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
       const bal=soMatch!==undefined?soMatch.balance:r.balance;
       return {
         'Order no':r.orderNo,'Type':r.itemType,'Stone type':r.stoneType,
@@ -2212,11 +2283,22 @@ function P_settingDiff(r){
 //   Parent row: has qty (the job item itself)
 //   Sub-rows  : no qty, just additional stone types for the same article
 // Fallback to Stone Orders (D.stoneOrders) if pool is empty (e.g., legacy data)
-function getStonesForItem(orderNo, article){
+function getStonesForItem(orderNo, article, itemKey){
   const empty={types:[],dias:[],counts:[],totalCount:0,typesStr:'',diasStr:'',countStr:'',raw:[]};
   if(!orderNo||!article) return empty;
-  // ── Primary source: Order Pool ──
-  const poolMatches=(D.pool||[]).filter(p=>p.orderNo===orderNo && p.article===article && p.stoneType);
+  const key=(itemKey||'').trim();
+
+  // Primary source: Order Pool rows linked by parentItemKey.
+  // This is the critical fix for repeated articles with different sizes.
+  let poolMatches=[];
+  if(key){
+    poolMatches=(D.pool||[]).filter(p=>(p.parentItemKey===key || (rowHasItemQty(p)&&p.itemKey===key)) && p.stoneType);
+  }
+  // Legacy fallback only when itemKey is not available.
+  if(!poolMatches.length && !key){
+    poolMatches=(D.pool||[]).filter(p=>p.orderNo===orderNo && p.article===article && p.stoneType);
+  }
+
   if(poolMatches.length){
     const types  = poolMatches.map(p=>p.stoneType||'').filter(Boolean);
     const dias   = poolMatches.map(p=>p.stoneDia||'').filter(Boolean);
@@ -2229,8 +2311,15 @@ function getStonesForItem(orderNo, article){
     const countStr = totalCount>0 ? String(totalCount) : '—';
     return {types,dias,counts,totalCount,typesStr,diasStr,countStr,raw:poolMatches};
   }
-  // ── Fallback: Stone Orders ──
-  const soMatches=(D.stoneOrders||[]).filter(s=>s.orderNo===orderNo && s.article===article);
+
+  // Fallback: Stone Orders linked by itemKey. Use article-wide matching only for old data.
+  let soMatches=[];
+  if(key){
+    soMatches=(D.stoneOrders||[]).filter(s=>s.itemKey===key);
+  }
+  if(!soMatches.length && !key){
+    soMatches=(D.stoneOrders||[]).filter(s=>s.orderNo===orderNo && s.article===article);
+  }
   if(!soMatches.length) return empty;
   const types  = soMatches.map(s=>s.stoneType||'').filter(Boolean);
   const dias   = soMatches.map(s=>s.stoneDia||s.stoneSize||'').filter(Boolean);
@@ -2270,7 +2359,7 @@ function P_renderSetting(){
       else if(diff>0.0001) diffCell=`<span class="badge bg" title="Company owes technician">+${v}</span>`;
       else diffCell=`<span class="badge bgr">0.00</span>`;
     }
-    const stones=getStonesForItem(r.orderNo, r.article);
+    const stones=getStonesForItem(r.orderNo, r.article, r.itemKey);
     return`<tr>
     <td><input type="checkbox" class="sm-cb" value="${i}"></td>
     <td><strong>${r.orderNo}</strong></td>
@@ -2303,7 +2392,7 @@ function P_openSetAssign(){
   // Item info (order/article) uses rowspan when an item has multiple stones
   const itemRows=idx.map(i=>{
     const r=PD.setting[i];
-    const stones=getStonesForItem(r.orderNo,r.article);
+    const stones=getStonesForItem(r.orderNo,r.article,r.itemKey);
     // No stones found — render a single row with one input
     if(!stones.raw||!stones.raw.length){
       return`<tr>
@@ -2512,9 +2601,9 @@ function PM_renderPool(){
       <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
       <td>${r.size||'—'}</td>
       <td>${r.qty||''}</td>
-      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.typesStr||r.stoneType||'—';})()}</td>
-      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.diasStr||r.stoneDia||'—';})()}</td>
-      <td>${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.countStr||r.totalStones||'—';})()}</td>
+      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.diasStr||r.stoneDia||'—';})()}</td>
+      <td>${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.countStr||r.totalStones||'—';})()}</td>
       <td>${r.totalWt||'—'}</td>
       <td>${r.wtPurity||'—'}</td>
     </tr>`;
@@ -2590,8 +2679,8 @@ function PM_render(){
       <td>${r.received||0}</td>
       <td>${r.balance}</td>
       <td>${sc}</td>
-      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.typesStr||r.stoneType||'—';})()}</td>
-      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.diasStr||r.stoneDia||'—';})()}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.diasStr||r.stoneDia||'—';})()}</td>
       <td><span class="badge ${status.cls}">${status.label}</span></td>
       <td>${fd}</td>
     </tr>`;
@@ -2800,7 +2889,7 @@ function GL_buildRecords(){
     if(r.worker && r.returnWt!=='' && r.returnWt!=null){
       const sent=P_fillingSentWt(r);
       const diff=P_num(r.returnWt)-sent*(1-(P_num(r.lossPct)/100));
-      const stF=getStonesForItem(r.orderNo,r.article);
+      const stF=getStonesForItem(r.orderNo,r.article,r.itemKey);
       recs.push({
         process:'Filling',
         processCls:'bb',
@@ -2819,7 +2908,7 @@ function GL_buildRecords(){
       const stoneG=P_num(r.setStoneCt)/5;
       const metalReturned=P_num(r.setReturnWt)-stoneG;
       const diff=metalReturned-sent*(1-(P_num(r.setLossPct)/100));
-      const stS=getStonesForItem(r.orderNo,r.article);
+      const stS=getStonesForItem(r.orderNo,r.article,r.itemKey);
       recs.push({
         process:'Setting',
         processCls:'bp',
