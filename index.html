@@ -1326,6 +1326,10 @@ function syncJobsFromPool(rows){
       existing.article=p.article;
       existing.size=p.size;
       existing.metal=p.metal;
+      // Keep stone fields in Job Master so mobile / Production Overview can display them.
+      existing.stoneType = p.stoneType || existing.stoneType || '';
+      existing.stoneDia = p.stoneDia || p.stoneSize || existing.stoneDia || '';
+      existing.totalStones = p.totalStones || existing.totalStones || '';
       if(qty>0){
         existing.qty=qty;
         existing.balance=qty-(+existing.received||0);
@@ -1339,7 +1343,11 @@ function syncJobsFromPool(rows){
         orderNo:p.orderNo, no, itemKey:p.itemKey,
         itemType:p.type, article:p.article, size:p.size,
         qty, repair:0, received:0, balance:qty,
-        metal:p.metal, factory:FACTORIES[0]||'PKL',
+        metal:p.metal,
+        stoneType:p.stoneType || '',
+        stoneDia:p.stoneDia || p.stoneSize || '',
+        totalStones:p.totalStones || '',
+        factory:FACTORIES[0]||'PKL',
         stoneComplete:'', finishDate:''
       });
       created++;
@@ -1364,6 +1372,33 @@ function buildItemKey(r){
     r.size||'', r.qty||'', r.stoneType||'', r.stoneDia||''
   ].map(x=>(x+'').trim()).filter(Boolean);
   return parts.join('-');
+}
+
+// Find the Order Pool source row for a Job Master item.
+// Used to backfill old localStorage jobs that were created before stone fields were saved.
+function findPoolRowForJob(j){
+  const pool = D.pool || [];
+  return pool.find(p => p.itemKey && j.itemKey && p.itemKey === j.itemKey)
+      || pool.find(p =>
+        (p.orderNo || '') === (j.orderNo || '') &&
+        (p.article || '') === (j.article || '') &&
+        (p.metal || '') === (j.metal || '') &&
+        String(p.size || '') === String(j.size || '') &&
+        String(p.qty || '') === String(j.qty || '')
+      )
+      || {};
+}
+
+// Backfill stone fields into Job Master records for desktop + mobile.
+// This does not overwrite existing values; it only fills blanks.
+function hydrateJobStoneFields(){
+  normalizePoolParentKeys(D.pool || []);
+  (D.jobs || []).forEach(j => {
+    const p = findPoolRowForJob(j);
+    if(!j.stoneType) j.stoneType = p.stoneType || '';
+    if(!j.stoneDia) j.stoneDia = p.stoneDia || p.stoneSize || '';
+    if(!j.totalStones) j.totalStones = p.totalStones || '';
+  });
 }
 
 // ── STONE ORDERS: auto-generated from Order Pool (every row with a stoneType) ──
@@ -1887,6 +1922,7 @@ function updateJobOrderDate(i, isoDate){
 // RENDER ALL — wrapped in safeCall so one failure cannot cascade
 function renderAll(){
   const safeCall=(name,fn)=>{try{fn();}catch(e){console.error('Error in '+name+':',e);}};
+  safeCall('hydrateJobStoneFields',hydrateJobStoneFields);
   safeCall('populateJobTypeFilter',populateJobTypeFilter);
   safeCall('renderDashboard',renderDashboard);
   safeCall('renderOrders',renderOrders);
@@ -1955,8 +1991,9 @@ function P_importPoolData(){
   src.forEach(j=>{
     if(known.has(j.itemKey)){skipped++;return;}
     known.add(j.itemKey);
-    // Find matching pool row for metal weight data
-    const poolRow = (D.pool||[]).find(p=>p.itemKey===j.itemKey) || {};
+    // Find matching pool row for metal weight / stone data
+    const poolRow = findPoolRowForJob(j);
+    const stones = getStonesForItem(j.orderNo, j.article, j.itemKey);
     PD.casting.push({
       itemKey: j.itemKey,
       orderNo: j.orderNo,
@@ -1967,9 +2004,9 @@ function P_importPoolData(){
       qty: j.qty,
       totalWt: poolRow.totalWt || '',
       wtPurity: poolRow.wtPurity || '',
-      stoneType: j.stoneType || poolRow.stoneType || '',
-      stoneDia: j.stoneDia || poolRow.stoneDia || '',
-      totalStones: poolRow.totalStones || '',
+      stoneType: j.stoneType || poolRow.stoneType || stones.typesStr || '',
+      stoneDia: j.stoneDia || poolRow.stoneDia || stones.diasStr || '',
+      totalStones: j.totalStones || poolRow.totalStones || stones.countStr || '',
       castDate: '',
       receivedDate: '',
       receivedWeight: '',
@@ -2613,17 +2650,19 @@ function PM_renderPool(){
 function togglePMPoolAll(cb){document.querySelectorAll('.pm-pool-cb:not([disabled])').forEach(x=>x.checked=cb.checked);}
 
 function PM_loadFromJobMaster(){
+  hydrateJobStoneFields();
   PM_items = (D.jobs||[]).map(j=>{
-    const poolRow = (D.pool||[]).find(p=>p.itemKey===j.itemKey)||{};
+    const poolRow = findPoolRowForJob(j);
+    const stones = getStonesForItem(j.orderNo, j.article, j.itemKey);
     return {
       ...j,
-      // Fallback stoneType + stoneDia to pool data if job's value is empty
-      stoneType: j.stoneType || poolRow.stoneType || '',
-      stoneDia: j.stoneDia || poolRow.stoneDia || '',
+      // Fallback stoneType + stoneDia to pool / Stone Orders if job's value is empty
+      stoneType: j.stoneType || poolRow.stoneType || stones.typesStr || '',
+      stoneDia: j.stoneDia || poolRow.stoneDia || stones.diasStr || '',
       totalWt: poolRow.totalWt||'',
       wtPurity: poolRow.wtPurity||'',
       stoneSizing: poolRow.stoneSizing||'',
-      totalStones: poolRow.totalStones||''
+      totalStones: j.totalStones || poolRow.totalStones || stones.countStr || ''
     };
   });
   PM_render();
@@ -3036,7 +3075,7 @@ function GL_exportPDF(){
   P_toast('PDF exported');
 }
 
-function P_renderAll(){PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();GL_render();}
+function P_renderAll(){hydrateJobStoneFields();PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();GL_render();}
 P_loadData();P_renderAll();
 
 
