@@ -12,17 +12,14 @@
 <style>
 /* ── Accounting / Ledger Style ── */
 :root{
-  /* Cards/sidebar stay white for content clarity.
-     Body uses a slate tone — darker than before for better card separation. */
-  --bg:#FFFFFF;--bg2:#F2F4F8;--bg3:#C9D0DB;
+  --bg:#FFFFFF;--bg2:#F6F7F9;--bg3:#EDEFF2;
   --tx:#1C2530;--tx2:#5A6675;--tx3:#9AA4B2;
-  --bd:rgba(28,37,48,0.12);--bd2:rgba(28,37,48,0.20);
+  --bd:rgba(28,37,48,0.09);--bd2:rgba(28,37,48,0.16);
   --accent:#1B4D8C;--accent2:#2563A8;
   --r:5px;--rl:7px;
   --font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
-  /* Stronger shadows so cards visibly lift off the darker background */
-  --shadow:0 1px 3px rgba(28,37,48,.10),0 2px 6px rgba(28,37,48,.06);
-  --shadow-lg:0 6px 24px rgba(28,37,48,.18),0 2px 6px rgba(28,37,48,.10);
+  --shadow:0 1px 2px rgba(28,37,48,.06),0 1px 3px rgba(28,37,48,.05);
+  --shadow-lg:0 4px 16px rgba(28,37,48,.12),0 1px 4px rgba(28,37,48,.06);
   --red:#C0392B;--red-bg:#FBEAE8;--red-tx:#A02D20;
   --yel:#B8860B;--yel-bg:#FBF3E0;--yel-tx:#8A6508;
   --grn:#1E7E45;--grn-bg:#E6F4EC;--grn-tx:#15622F;
@@ -35,7 +32,7 @@ body{font-family:var(--font);background:var(--bg3);color:var(--tx);font-size:13.
 /* LAYOUT */
 .app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
 /* SIDEBAR */
-.sidebar{background:var(--bg);border-right:1px solid var(--bd);padding:1.25rem 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar{background:var(--bg3);border-right:1px solid var(--bd);padding:1.25rem 0;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{padding:0 1.25rem 1.1rem;border-bottom:1px solid var(--bd);margin-bottom:.75rem}
 .logo-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--accent);letter-spacing:-.01em}
 .logo-sub{font-size:10px;color:var(--tx3);margin-top:3px;letter-spacing:.05em;text-transform:uppercase}
@@ -148,7 +145,7 @@ td input,td select{padding:4px 7px;font-size:11.5px;border-radius:4px}
 .sp-view{border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:.875rem;overflow:hidden;box-shadow:var(--shadow)}
 .sp-header{background:var(--bg2);color:var(--accent);padding:.8rem 1.1rem;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd2);text-transform:uppercase;letter-spacing:.02em}
 /* MOBILE BOTTOM NAV */
-.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--bd2);z-index:100;padding:6px 0 env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(28,37,48,.08)}
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg3);border-top:1px solid var(--bd2);z-index:100;padding:6px 0 env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(28,37,48,.08)}
 .mob-nav-items{display:flex;justify-content:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;cursor:pointer;color:var(--tx3);font-size:9px;min-width:54px;flex:0 0 auto;border-radius:6px;transition:all .12s;text-transform:uppercase;letter-spacing:.02em;scroll-snap-align:start}
 .mob-nav-item.active{color:var(--accent)}
@@ -207,11 +204,12 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
   <div class="nav-sec">Workshop</div>
   <div class="nav-item" data-page="repair"><i class="ti ti-bandage"></i> Repair Jobs</div>
   <div class="nav-sec" data-module-group="production">Production</div>
-  <div class="nav-item" data-page="prod_master" data-module="production"><i class="ti ti-layout-list"></i> Planing</div>
+  <div class="nav-item" data-page="prod_master" data-module="production"><i class="ti ti-layout-list"></i> Planning</div>
   <div class="nav-item" data-page="prod_casting" data-module="production"><i class="ti ti-flame"></i> Casting Master</div>
   <div class="nav-item" data-page="prod_filling" data-module="production"><i class="ti ti-tool"></i> Filing Master</div>
   <div class="nav-item" data-page="prod_setting" data-module="production"><i class="ti ti-diamond"></i> Setting Master</div>
   <div class="nav-item" data-page="prod_polish" data-module="production"><i class="ti ti-sparkles"></i> Polish &amp; Plating</div>
+  <div class="nav-item" data-page="prod_goldloss" data-module="production"><i class="ti ti-coin"></i> Gold Loss</div>
   <div class="nav-sec">Assistant</div>
   <div class="nav-item" data-page="ai"><i class="ti ti-help"></i> User Guide</div>
   <div class="nav-item" data-page="settings"><i class="ti ti-adjustments"></i> Module Settings</div>
@@ -397,16 +395,17 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 
 <!-- ============ PRODUCTION MASTER ============ -->
 <div class="page" id="page-prod_master">
-<div class="ph"><div class="pt">Planing</div><div class="ps">Select items from Order Pool and send to Casting Master</div></div>
+<div class="ph"><div class="pt">Planning</div><div class="ps">Select items from Order Pool and send to Casting Master</div></div>
 
 <div class="card">
 <div class="ch"><span class="ct"><i class="ti ti-database-import"></i> Items from Order Pool</span>
 <span style="display:flex;gap:6px;flex-wrap:wrap">
-<button class="btn btnp btns" onclick="PM_refreshPool()"><i class="ti ti-refresh"></i> Refresh from Order Pool</button>
+<button class="btn btnp btns" onclick="PM_refreshPool()"><i class="ti ti-refresh"></i> Import from Order Pool</button>
 </span>
 </div>
 <div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
-<input id="pm-pool-search" oninput="PM_renderPool()" placeholder="Search order / article..." type="text"/>
+<input id="pm-pool-order" oninput="PM_renderPool()" placeholder="Search order no..." type="text"/>
+<input id="pm-pool-search" oninput="PM_renderPool()" placeholder="Search article..." type="text"/>
 <select id="pm-pool-metal-f" onchange="PM_renderPool()"><option value="">All metals</option></select>
 </div>
 <div class="tw"><table>
@@ -419,7 +418,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 <tbody id="pm-pool-body"></tbody>
 </table></div>
 <div style="padding:.875rem 1.1rem;border-top:1px solid var(--bd);display:flex;gap:8px;align-items:center">
-<button class="btn btnp" onclick="PM_moveToCasting()"><i class="ti ti-flame"></i> Send selected to Casting Master</button>
+<button class="btn btnp" onclick="PM_moveToCasting()"><i class="ti ti-flame"></i> Send selected to Production</button>
 <span id="pm-pool-count" style="font-size:12px;color:var(--tx2)"></span>
 </div>
 </div>
@@ -428,7 +427,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 
 <!-- ============ CASTING MASTER ============ -->
 <div class="page" id="page-prod_casting">
-<div class="ph"><div class="pt">Casting Master</div><div class="ps">Items sent from Planing — set casting date, then mark received to move to Filling Master</div></div>
+<div class="ph"><div class="pt">Casting Master</div><div class="ps">Items sent from Planning — set casting date, then mark received to move to Filling Master</div></div>
 <div class="metrics" id="prod-cm-metrics"></div>
 <div class="card">
 <div class="ch"><span class="ct"><i class="ti ti-scale"></i> Metal to prepare (by metal type)</span></div>
@@ -440,7 +439,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 <button class="btn btnp btns" onclick="P_receiveSelected()"><i class="ti ti-check"></i> Mark received &amp; move to Filling</button>
 </div>
 <div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
-<input id="prod-cm-search" oninput="P_renderCastMaster()" placeholder="Search order / article..." type="text"/>
+<input id="prod-cm-search-order" oninput="P_renderCastMaster()" placeholder="Search order no..." type="text"/>
+<input id="prod-cm-search" oninput="P_renderCastMaster()" placeholder="Search article..." type="text"/>
 <input id="prod-cm-search-cast" oninput="P_renderCastMaster()" placeholder="Search cast date..." type="text"/>
 </div>
 <div class="tw"><table>
@@ -478,7 +478,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 <th style="width:34px"><input id="prod-fm-all" onchange="P_toggleFmAll(this)" type="checkbox"/></th>
 <th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
 <th>Sent wt (g)</th><th>Qty</th><th>Goldsmith</th><th>Sent date</th>
-<th>Return date</th><th>Return wt (g)</th><th>Allow loss%</th><th>Diff (g)</th>
+<th>Return date</th><th>Return wt (g)</th><th>Allow loss%</th><th>Metal diff (g)</th>
 </tr></thead>
 <tbody id="prod-fm-body"></tbody>
 </table></div>
@@ -536,7 +536,8 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 </span>
 </div>
 <div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
-<input id="prod-pm-search" oninput="P_renderPolish()" placeholder="Search order / article..." type="text"/>
+<input id="prod-pm-search-order" oninput="P_renderPolish()" placeholder="Search order no..." type="text"/>
+<input id="prod-pm-search" oninput="P_renderPolish()" placeholder="Search article..." type="text"/>
 <input id="prod-pm-search-worker" oninput="P_renderPolish()" placeholder="Search technician..." type="text"/>
 <select id="prod-pm-status-f" onchange="P_renderPolish()"><option value="">All status</option><option value="unassigned">Unassigned</option><option value="out">Out with technician</option><option value="returned">Returned</option></select>
 </div>
@@ -545,9 +546,42 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
 <th style="width:34px"><input id="prod-pm-all" onchange="P_togglePmAll(this)" type="checkbox"/></th>
 <th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
 <th>Sent wt (g)</th><th>Qty</th><th>Technician</th><th>Sent date</th>
-<th>Return date</th><th>Return wt (g)</th><th>Allow loss%</th><th>Diff (g)</th>
+<th>Return date</th><th>Return wt (g)</th><th>Allow loss%</th><th>Metal diff (g)</th>
 </tr></thead>
 <tbody id="prod-pm-body"></tbody>
+</table></div>
+</div>
+</div>
+
+<!-- ============ GOLD LOSS ============ -->
+<div class="page" id="page-prod_goldloss">
+<div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+<div><div class="pt">Gold Loss Report</div><div class="ps">Performance report for goldsmiths (Filing) and setters (Setting) — metal loss per technician</div></div>
+<button class="btn btnp" onclick="GL_exportPDF()"><i class="ti ti-file-type-pdf"></i> Export PDF</button>
+</div>
+
+<div class="metrics" id="gl-metrics"></div>
+
+<div class="card">
+<div class="ch"><span class="ct">Filters</span></div>
+<div class="frow" style="padding:.875rem 1.1rem">
+<select id="gl-process-f" onchange="GL_render()" style="min-width:140px"><option value="">All processes</option><option value="filling">Filling (Goldsmith)</option><option value="setting">Setting (Setter)</option></select>
+<input id="gl-search-order" oninput="GL_render()" placeholder="Search order no..." type="text"/>
+<input id="gl-search-worker" oninput="GL_render()" placeholder="Search technician..." type="text"/>
+<select id="gl-metal-f" onchange="GL_render()" style="min-width:140px"><option value="">All metals</option></select>
+</div>
+</div>
+
+<div class="card">
+<div class="ch"><span class="ct">Detail — <span id="gl-count">0</span> records</span></div>
+<div class="tw"><table>
+<thead><tr>
+<th>Process</th><th>Technician</th>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
+<th>Qty</th><th>Stone type</th><th>Stone qty</th>
+<th>Sent wt (g)</th><th>Return wt (g)</th><th>Metal diff (g)</th>
+</tr></thead>
+<tbody id="gl-body"></tbody>
 </table></div>
 </div>
 </div>
@@ -1035,7 +1069,7 @@ function renderJobs(){
       <td><strong>${r.orderNo||''}</strong></td>
       <td><span class="tag">${r.itemType||''}</span></td>
       <td>${r.article||''}</td>
-      <td>${r.stoneType||'—'}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.typesStr||r.stoneType||'—';})()}</td>
       <td>${r.size||'—'}</td>
       <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
       <td><span class="tag">${r.factory||'—'}</span></td>
@@ -1807,7 +1841,7 @@ let MODULES={dashboard:true,job:true,stone:true,production:true};
 function loadModuleSettings(){try{MODULES={...MODULES,...JSON.parse(localStorage.getItem(MOD_SK)||"{}")} }catch(e){};["dashboard","job","stone","production"].forEach(k=>{const el=g("mod-"+k);if(el)el.checked=MODULES[k];});applyModuleVisibility();}
 function saveModuleSettings(){["dashboard","job","stone","production"].forEach(k=>{const el=g("mod-"+k);if(el)MODULES[k]=el.checked;});localStorage.setItem(MOD_SK,JSON.stringify(MODULES));applyModuleVisibility();toast("Module settings saved");}
 function setNavVisible(pageList, visible){pageList.forEach(p=>document.querySelectorAll(`[data-page="${p}"]`).forEach(el=>el.style.display=visible?"":"none"));}
-function applyModuleVisibility(){setNavVisible(["dashboard"],MODULES.dashboard);setNavVisible(["jobs","repair"],MODULES.job);setNavVisible(["stone_order","stone_purchase"],MODULES.stone);setNavVisible(["prod_overview","prod_master","prod_casting","prod_filling","prod_setting","prod_polish"],MODULES.production);document.querySelectorAll("[data-module-group=production]").forEach(el=>el.style.display=MODULES.production?"":"none");const active=document.querySelector(".page.active");if(active){const p=active.id.replace("page-","");const hidden=(!MODULES.dashboard&&p==="dashboard")||(!MODULES.job&&["jobs","repair"].includes(p))||(!MODULES.stone&&["stone_order","stone_purchase"].includes(p))||(!MODULES.production&&p.startsWith("prod_"));if(hidden)navTo("pool");}}
+function applyModuleVisibility(){setNavVisible(["dashboard"],MODULES.dashboard);setNavVisible(["jobs","repair"],MODULES.job);setNavVisible(["stone_order","stone_purchase"],MODULES.stone);setNavVisible(["prod_overview","prod_master","prod_casting","prod_filling","prod_setting","prod_polish","prod_goldloss"],MODULES.production);document.querySelectorAll("[data-module-group=production]").forEach(el=>el.style.display=MODULES.production?"":"none");const active=document.querySelector(".page.active");if(active){const p=active.id.replace("page-","");const hidden=(!MODULES.dashboard&&p==="dashboard")||(!MODULES.job&&["jobs","repair"].includes(p))||(!MODULES.stone&&["stone_order","stone_purchase"].includes(p))||(!MODULES.production&&p.startsWith("prod_"));if(hidden)navTo("pool");}}
 
 
 // ===== PRODUCTION MODULE (merged from production.html) =====
@@ -1898,9 +1932,15 @@ function P_buildItemKey(r){
 function P_num(x){const n=parseFloat(x);return isNaN(n)?0:n;}
 function P_renderCastMaster(){
   const q=(P_gv('cm-search')||'').toLowerCase();
+  const qo=(P_gv('cm-search-order')||'').toLowerCase();
   const qc=(P_gv('cm-search-cast')||'').toLowerCase();
   const data=[...PD.casting].sort((a,b)=>P_toISO(a.castDate).localeCompare(P_toISO(b.castDate)));
-  const f=data.filter(r=>(r.orderNo+r.article+r.type).toLowerCase().includes(q)&&(r.castDate||'').toLowerCase().includes(qc));
+  const f=data.filter(r=>{
+    if(qo&&!((r.orderNo||'').toLowerCase().includes(qo)))return false;
+    if(q&&!((r.article+r.type).toLowerCase().includes(q)))return false;
+    if(qc&&!((r.castDate||'').toLowerCase().includes(qc)))return false;
+    return true;
+  });
   P_g('cm-count').textContent=PD.casting.length;
 
   // metrics
@@ -2166,6 +2206,44 @@ function P_settingDiff(r){
   const allowed=P_settingMetalWt(r)*(1-(P_num(r.setLossPct)/100));
   return metalReturned-allowed;
 }
+
+// ── Aggregate ALL stones for an item ──
+// SOURCE OF TRUTH: Order Pool (D.pool) — parent row + sub-rows for same (orderNo+article)
+//   Parent row: has qty (the job item itself)
+//   Sub-rows  : no qty, just additional stone types for the same article
+// Fallback to Stone Orders (D.stoneOrders) if pool is empty (e.g., legacy data)
+function getStonesForItem(orderNo, article){
+  const empty={types:[],dias:[],counts:[],totalCount:0,typesStr:'',diasStr:'',countStr:'',raw:[]};
+  if(!orderNo||!article) return empty;
+  // ── Primary source: Order Pool ──
+  const poolMatches=(D.pool||[]).filter(p=>p.orderNo===orderNo && p.article===article && p.stoneType);
+  if(poolMatches.length){
+    const types  = poolMatches.map(p=>p.stoneType||'').filter(Boolean);
+    const dias   = poolMatches.map(p=>p.stoneDia||'').filter(Boolean);
+    const counts = poolMatches.map(p=>parseInt(p.totalStones)||parseInt(p.stoneQtyPer)||0);
+    const totalCount = counts.reduce((a,b)=>a+b,0);
+    const typesStr = types.length>1
+      ? poolMatches.map(p=>`${p.stoneType||''}<span style="color:var(--tx3)"> (${parseInt(p.totalStones)||parseInt(p.stoneQtyPer)||0})</span>`).join('<br>')
+      : (types[0]||'—');
+    const diasStr  = dias.length>1 ? dias.join('<br>') : (dias[0]||'—');
+    const countStr = totalCount>0 ? String(totalCount) : '—';
+    return {types,dias,counts,totalCount,typesStr,diasStr,countStr,raw:poolMatches};
+  }
+  // ── Fallback: Stone Orders ──
+  const soMatches=(D.stoneOrders||[]).filter(s=>s.orderNo===orderNo && s.article===article);
+  if(!soMatches.length) return empty;
+  const types  = soMatches.map(s=>s.stoneType||'').filter(Boolean);
+  const dias   = soMatches.map(s=>s.stoneDia||s.stoneSize||'').filter(Boolean);
+  const counts = soMatches.map(s=>+s.totalQty||0);
+  const totalCount = counts.reduce((a,b)=>a+b,0);
+  const typesStr = types.length>1
+    ? soMatches.map(s=>`${s.stoneType||''}<span style="color:var(--tx3)"> (${+s.totalQty||0})</span>`).join('<br>')
+    : (types[0]||'—');
+  const diasStr  = dias.length>1 ? dias.join('<br>') : (dias[0]||'—');
+  const countStr = totalCount>0 ? String(totalCount) : '—';
+  return {types,dias,counts,totalCount,typesStr,diasStr,countStr,raw:soMatches};
+}
+
 function P_renderSetting(){
   const q=(P_gv('sm-search')||'').toLowerCase();
   const qw=(P_gv('sm-search-worker')||'').toLowerCase();
@@ -2192,6 +2270,7 @@ function P_renderSetting(){
       else if(diff>0.0001) diffCell=`<span class="badge bg" title="Company owes technician">+${v}</span>`;
       else diffCell=`<span class="badge bgr">0.00</span>`;
     }
+    const stones=getStonesForItem(r.orderNo, r.article);
     return`<tr>
     <td><input type="checkbox" class="sm-cb" value="${i}"></td>
     <td><strong>${r.orderNo}</strong></td>
@@ -2200,9 +2279,9 @@ function P_renderSetting(){
     <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
     <td>${mwt?mwt.toFixed(2):''}</td>
     <td>${r.qty||''}</td>
-    <td>${r.stoneType||'—'}</td>
-    <td>${r.stoneDia||'—'}</td>
-    <td>${r.totalStones||'—'}</td>
+    <td style="font-size:12px;line-height:1.5">${stones.typesStr||r.stoneType||'—'}</td>
+    <td style="font-size:12px;line-height:1.5">${stones.diasStr||r.stoneDia||'—'}</td>
+    <td>${stones.countStr||r.totalStones||'—'}</td>
     <td>${r.setWorker?`<span class="badge bb">${r.setWorker}</span>`:'<span style="color:var(--tx3)">—</span>'}</td>
     <td>${r.setSentDate||'<span style="color:var(--tx3)">—</span>'}</td>
     <td>${r.setReturnDate||'<span style="color:var(--tx3)">—</span>'}</td>
@@ -2220,22 +2299,45 @@ function P_openSetAssign(){
   if(!PWORKERS.length){P_toast('Add a technician first (Manage technicians)');return;}
   const today=new Date().toISOString().slice(0,10);
   const opts=PWORKERS.map(w=>`<option value="${w}">${w}</option>`).join('');
-  // per-item stone weight rows — show order/article + stone type + dia so multi-stone items are clear
+  // Render ONE ROW PER STONE TYPE per item, so each stone type has its own carat input
+  // Item info (order/article) uses rowspan when an item has multiple stones
   const itemRows=idx.map(i=>{
     const r=PD.setting[i];
-    return`<tr>
-      <td style="font-size:11.5px"><strong>${r.orderNo}</strong><br><span style="color:var(--tx3)">${r.article||''}</span></td>
-      <td style="font-size:11.5px">${r.stoneType||'—'}</td>
-      <td style="font-size:11.5px">${r.stoneDia||'—'}</td>
-      <td style="font-size:11.5px;color:var(--tx2)">${r.totalStones||'—'}</td>
-      <td><input type="number" step="0.001" class="set-ct" data-idx="${i}" value="${r.setStoneCt||''}" placeholder="carat" style="width:80px"></td>
-    </tr>`;
+    const stones=getStonesForItem(r.orderNo,r.article);
+    // No stones found — render a single row with one input
+    if(!stones.raw||!stones.raw.length){
+      return`<tr>
+        <td style="font-size:11.5px"><strong>${r.orderNo}</strong><br><span style="color:var(--tx3)">${r.article||''}</span></td>
+        <td style="font-size:11.5px">${r.stoneType||'—'}</td>
+        <td style="font-size:11.5px">${r.stoneDia||'—'}</td>
+        <td style="font-size:11.5px;color:var(--tx2)">${r.totalStones||'—'}</td>
+        <td><input type="number" step="0.001" class="set-ct" data-idx="${i}" data-stone="0" value="${(r.setStoneCarats&&r.setStoneCarats[0])||r.setStoneCt||''}" placeholder="carat" style="width:80px"></td>
+      </tr>`;
+    }
+    // Multiple stones — one row per stone type with rowspan on item cell
+    const n=stones.raw.length;
+    return stones.raw.map((stone,si)=>{
+      const count=stones.counts[si]||0;
+      const stType=stone.stoneType||'';
+      const stDia=stone.stoneDia||stone.stoneSize||'—';
+      const caratVal=(r.setStoneCarats&&r.setStoneCarats[si])||'';
+      const firstCol = si===0
+        ? `<td rowspan="${n}" style="font-size:11.5px;vertical-align:top;background:var(--bg2)"><strong>${r.orderNo}</strong><br><span style="color:var(--tx3)">${r.article||''}</span></td>`
+        : '';
+      return`<tr>
+        ${firstCol}
+        <td style="font-size:11.5px">${stType}</td>
+        <td style="font-size:11.5px">${stDia}</td>
+        <td style="font-size:11.5px;color:var(--tx2)">${count||'—'}</td>
+        <td><input type="number" step="0.001" class="set-ct" data-idx="${i}" data-stone="${si}" value="${caratVal}" placeholder="carat" style="width:80px"></td>
+      </tr>`;
+    }).join('');
   }).join('');
   P_openModal(`<h3>Assign to technician</h3>
-    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected for stone-setting. Choose the technician, the date the work is handed out, and the stone weight (carat) given for each item.</p>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected for stone-setting. Choose the setter, the date the work is handed out, and the stone weight (carat) for EACH stone type.</p>
     <div class="fg"><label class="fl">Setter</label><select id="set-worker">${opts}<option value="__add__">+ Add technician…</option></select></div>
     <div class="fg"><label class="fl">Sent date (work handed out)</label><input type="date" lang="en" id="set-date" value="${today}"></div>
-    <div class="fg"><label class="fl">Stone weight given (carat) per item</label>
+    <div class="fg"><label class="fl">Stone weight given (carat) — one input per stone type</label>
       <div class="tw" style="max-height:230px;overflow-y:auto;border:1px solid var(--bd);border-radius:var(--r)"><table>
         <thead><tr><th>Item</th><th>Stone type</th><th>Stone dia</th><th>Stones</th><th>Carat</th></tr></thead>
         <tbody>${itemRows}</tbody>
@@ -2249,14 +2351,24 @@ function P_openSetAssign(){
 function P_confirmSetAssign(idx){
   const w=P_gv('set-worker');
   const d=P_fromISO(P_gv('set-date'));
-  if(!w||w==='__add__'){P_toast('Choose a technician');return;}
+  if(!w||w==='__add__'){P_toast('Choose a setter');return;}
   if(!d){P_toast('Choose a sent date');return;}
-  // read per-item carat inputs
+  // Collect carats per stone-type per item
   document.querySelectorAll('.set-ct').forEach(inp=>{
     const i=+inp.dataset.idx;
-    PD.setting[i].setStoneCt=inp.value;
+    const si=+inp.dataset.stone||0;
+    if(!PD.setting[i].setStoneCarats) PD.setting[i].setStoneCarats=[];
+    PD.setting[i].setStoneCarats[si]=inp.value;
   });
-  idx.forEach(i=>{PD.setting[i].setWorker=w;PD.setting[i].setSentDate=d;});
+  // Compute total carat per item (sum of all stone types)
+  idx.forEach(i=>{
+    const r=PD.setting[i];
+    const carats=r.setStoneCarats||[];
+    const total=carats.reduce((s,c)=>s+(P_num(c)||0),0);
+    r.setStoneCt = total>0 ? total.toFixed(3) : '';
+    r.setWorker=w;
+    r.setSentDate=d;
+  });
   P_save();P_closeModal();P_renderSetting();
   P_toast(idx.length+' item(s) assigned to '+w);
 }
@@ -2374,9 +2486,11 @@ function PM_refreshPool(){
 
 function PM_renderPool(){
   const q=(document.getElementById('pm-pool-search')||{value:''}).value.toLowerCase();
+  const qo=(document.getElementById('pm-pool-order')||{value:''}).value.toLowerCase();
   const mf=(document.getElementById('pm-pool-metal-f')||{value:''}).value;
   const f=PM_pool.filter(r=>{
-    if(!((r.orderNo+r.article+(r.type||'')).toLowerCase().includes(q)))return false;
+    if(qo&&!((r.orderNo||'').toLowerCase().includes(qo)))return false;
+    if(q&&!((r.article+(r.type||'')).toLowerCase().includes(q)))return false;
     if(mf&&r.metal!==mf)return false;
     return true;
   });
@@ -2398,9 +2512,9 @@ function PM_renderPool(){
       <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
       <td>${r.size||'—'}</td>
       <td>${r.qty||''}</td>
-      <td>${r.stoneType||'—'}</td>
-      <td>${r.stoneDia||'—'}</td>
-      <td>${r.totalStones||'—'}</td>
+      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.diasStr||r.stoneDia||'—';})()}</td>
+      <td>${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.countStr||r.totalStones||'—';})()}</td>
       <td>${r.totalWt||'—'}</td>
       <td>${r.wtPurity||'—'}</td>
     </tr>`;
@@ -2476,8 +2590,8 @@ function PM_render(){
       <td>${r.received||0}</td>
       <td>${r.balance}</td>
       <td>${sc}</td>
-      <td>${r.stoneType||'—'}</td>
-      <td>${r.stoneDia||'—'}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article);return s.diasStr||r.stoneDia||'—';})()}</td>
       <td><span class="badge ${status.cls}">${status.label}</span></td>
       <td>${fd}</td>
     </tr>`;
@@ -2489,7 +2603,7 @@ function PM_moveToCasting(){
   if(!keys.length){P_toast('Select at least one item');return;}
   const today=new Date().toISOString().slice(0,10);
   // Show date picker modal
-  openModal(`<h3><i class="ti ti-flame" style="color:var(--accent)"></i> Send to Casting Master</h3>
+  openModal(`<h3><i class="ti ti-flame" style="color:var(--accent)"></i> Send to Production</h3>
     <p style="font-size:13px;color:var(--tx2);margin-bottom:1.2rem">${keys.length} item(s) selected. Choose the casting date.</p>
     <div class="fg"><label class="fl">Casting date</label><input type="date" lang="en" id="pm-cast-date" value="${today}" style="width:100%"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem">
@@ -2522,7 +2636,7 @@ function PM_confirmCast(keys){
   P_save();P_renderAll();PM_loadFromJobMaster();
   closeModal();
   if(added) navTo('prod_casting');
-  P_toast(added+' item(s) sent to Casting Master'+(skipped?' · '+skipped+' already there':''));
+  P_toast(added+' item(s) sent to Production'+(skipped?' · '+skipped+' already there':''));
 }
 
 function P_loadFromOrderPool(){
@@ -2556,11 +2670,13 @@ function P_polishDiff(r){
 
 function P_renderPolish(){
   const q=(P_g('pm-search')||{value:''}).value.toLowerCase();
+  const qo=(P_g('pm-search-order')||{value:''}).value.toLowerCase();
   const qw=(P_g('pm-search-worker')||{value:''}).value.toLowerCase();
   const st=(P_g('pm-status-f')||{value:''}).value;
   const f=(PD.polish||[]).filter(r=>{
-    if(!(r.orderNo+r.article+r.type).toLowerCase().includes(q))return false;
-    if(!(r.polishWorker||'').toLowerCase().includes(qw))return false;
+    if(qo&&!((r.orderNo||'').toLowerCase().includes(qo)))return false;
+    if(q&&!((r.article+r.type).toLowerCase().includes(q)))return false;
+    if(qw&&!((r.polishWorker||'').toLowerCase().includes(qw)))return false;
     if(st==='unassigned'&&r.polishWorker)return false;
     if(st==='out'&&(!r.polishWorker||r.polishReturnDate))return false;
     if(st==='returned'&&!r.polishReturnDate)return false;
@@ -2671,7 +2787,167 @@ function P_finishAndUpdate(){
   save();P_save();renderAll();P_renderAll();P_toast(idx.length+' item(s) finished — see Production Overview');
 }
 
-function P_renderAll(){PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();}
+
+// ============ GOLD LOSS REPORT ============
+// Scan ALL Production arrays (Filling/Setting/Polish) — an item retains its
+// filling/setting fields after being moved to the next stage, so we collect
+// records from wherever the item currently lives.
+function GL_buildRecords(){
+  const recs=[];
+  const allItems=[...(PD.filling||[]),...(PD.setting||[]),...(PD.polish||[])];
+  allItems.forEach(r=>{
+    // ── Filling record: item has filling worker + return weight ──
+    if(r.worker && r.returnWt!=='' && r.returnWt!=null){
+      const sent=P_fillingSentWt(r);
+      const diff=P_num(r.returnWt)-sent*(1-(P_num(r.lossPct)/100));
+      const stF=getStonesForItem(r.orderNo,r.article);
+      recs.push({
+        process:'Filling',
+        processCls:'bb',
+        worker:r.worker||'—',
+        orderNo:r.orderNo||'',type:r.type||'',article:r.article||'',
+        metal:r.metal||'',qty:P_num(r.qty)||0,
+        stoneType:stF.typesStr||r.stoneType||'—',
+        stoneQty:stF.totalCount||(P_num(r.totalStones)||0),
+        sentWt:sent,returnWt:P_num(r.returnWt),
+        metalDiff:diff
+      });
+    }
+    // ── Setting record: item has setter + setting return weight ──
+    if(r.setWorker && r.setReturnWt!=='' && r.setReturnWt!=null){
+      const sent=P_settingMetalWt(r);
+      const stoneG=P_num(r.setStoneCt)/5;
+      const metalReturned=P_num(r.setReturnWt)-stoneG;
+      const diff=metalReturned-sent*(1-(P_num(r.setLossPct)/100));
+      const stS=getStonesForItem(r.orderNo,r.article);
+      recs.push({
+        process:'Setting',
+        processCls:'bp',
+        worker:r.setWorker||'—',
+        orderNo:r.orderNo||'',type:r.type||'',article:r.article||'',
+        metal:r.metal||'',qty:P_num(r.qty)||0,
+        stoneType:stS.typesStr||r.stoneType||'—',
+        stoneQty:stS.totalCount||(P_num(r.totalStones)||0),
+        sentWt:sent,returnWt:P_num(r.setReturnWt),
+        metalDiff:diff
+      });
+    }
+  });
+  return recs;
+}
+
+function GL_render(){
+  const recs=GL_buildRecords();
+  const pf=(P_g('gl-process-f')||{value:''}).value;
+  const qo=((P_g('gl-search-order')||{value:''}).value||'').toLowerCase();
+  const qw=((P_g('gl-search-worker')||{value:''}).value||'').toLowerCase();
+  const mf=(P_g('gl-metal-f')||{value:''}).value;
+  const f=recs.filter(r=>{
+    if(pf&&r.process.toLowerCase()!==pf)return false;
+    if(qo&&!(r.orderNo||'').toLowerCase().includes(qo))return false;
+    if(qw&&!(r.worker||'').toLowerCase().includes(qw))return false;
+    if(mf&&r.metal!==mf)return false;
+    return true;
+  });
+  // Metal filter options
+  const metals=[...new Set(recs.map(r=>r.metal).filter(Boolean))].sort();
+  const ms=P_g('gl-metal-f');
+  if(ms){const cur=ms.value;ms.innerHTML='<option value="">All metals</option>'+metals.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');}
+  // Totals
+  const totalQty=f.reduce((s,r)=>s+P_num(r.qty),0);
+  const totalStones=f.reduce((s,r)=>s+(P_num(r.stoneQty)||0),0);
+  const totalDiff=f.reduce((s,r)=>s+r.metalDiff,0);
+  const metrics=P_g('gl-metrics');
+  if(metrics){
+    metrics.innerHTML=`
+      <div class="metric"><div class="ml">Records</div><div class="mv">${f.length}</div></div>
+      <div class="metric"><div class="ml">Total qty</div><div class="mv">${totalQty}</div></div>
+      <div class="metric"><div class="ml">Total stones</div><div class="mv">${totalStones||'—'}</div></div>
+      <div class="metric"><div class="ml">Total metal diff (g)</div><div class="mv ${totalDiff<-0.0001?'red':totalDiff>0.0001?'grn':''}">${totalDiff.toFixed(2)}</div></div>`;
+  }
+  const cnt=P_g('gl-count');if(cnt)cnt.textContent=f.length;
+  const body=P_g('gl-body');if(!body)return;
+  if(!f.length){body.innerHTML='<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--tx3)">No records — items must be received from technician first</td></tr>';return;}
+  body.innerHTML=f.map(r=>{
+    const v=r.metalDiff.toFixed(2);
+    let diffCell;
+    if(r.metalDiff<-0.0001)diffCell=`<span class="badge br">${v}</span>`;
+    else if(r.metalDiff>0.0001)diffCell=`<span class="badge bg">+${v}</span>`;
+    else diffCell='<span class="badge bgr">0.00</span>';
+    return`<tr>
+      <td><span class="badge ${r.processCls}">${r.process}</span></td>
+      <td><span class="badge bb">${r.worker}</span></td>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.type}</span></td>
+      <td>${r.article}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal}</td>
+      <td>${r.qty}</td>
+      <td>${r.stoneType}</td>
+      <td>${r.stoneQty}</td>
+      <td>${r.sentWt?r.sentWt.toFixed(2):'—'}</td>
+      <td>${r.returnWt?r.returnWt.toFixed(2):'—'}</td>
+      <td>${diffCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function GL_exportPDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF){P_toast('PDF library still loading');return;}
+  const recs=GL_buildRecords();
+  const pf=(P_g('gl-process-f')||{value:''}).value;
+  const qo=((P_g('gl-search-order')||{value:''}).value||'').toLowerCase();
+  const qw=((P_g('gl-search-worker')||{value:''}).value||'').toLowerCase();
+  const mf=(P_g('gl-metal-f')||{value:''}).value;
+  const f=recs.filter(r=>{
+    if(pf&&r.process.toLowerCase()!==pf)return false;
+    if(qo&&!(r.orderNo||'').toLowerCase().includes(qo))return false;
+    if(qw&&!(r.worker||'').toLowerCase().includes(qw))return false;
+    if(mf&&r.metal!==mf)return false;
+    return true;
+  });
+  if(!f.length){P_toast('Nothing to export');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const today=new Date().toLocaleDateString('en-GB');
+  let y=14;
+  doc.setFontSize(16);doc.setTextColor(27,77,140);doc.text('Gold Loss Report',14,y);
+  doc.setFontSize(9);doc.setTextColor(120);doc.text('Generated: '+today,14,y+5);y+=10;
+  // Filter description
+  const filters=[];
+  if(pf)filters.push('Process: '+pf);
+  if(qo)filters.push('Order: '+qo);
+  if(qw)filters.push('Technician: '+qw);
+  if(mf)filters.push('Metal: '+mf);
+  if(filters.length){doc.setFontSize(9);doc.setTextColor(80);doc.text('Filters — '+filters.join(' · '),14,y);y+=6;}
+  // Totals
+  const totalQty=f.reduce((s,r)=>s+P_num(r.qty),0);
+  const totalStones=f.reduce((s,r)=>s+(P_num(r.stoneQty)||0),0);
+  const totalDiff=f.reduce((s,r)=>s+r.metalDiff,0);
+  doc.setFontSize(10);doc.setTextColor(28,37,48);
+  doc.text(`Records: ${f.length}    Total qty: ${totalQty}    Total stones: ${totalStones||'-'}    Total metal diff: ${totalDiff.toFixed(2)} g`,14,y);y+=4;
+  const stripHtml=h=>String(h||'').replace(/<br\s*\/?>/gi,', ').replace(/<[^>]+>/g,'');
+  const rows=f.map(r=>[
+    r.process, r.worker, r.orderNo, r.type, r.article, r.metal,
+    String(r.qty), stripHtml(r.stoneType), String(r.stoneQty),
+    r.sentWt?r.sentWt.toFixed(2):'-',
+    r.returnWt?r.returnWt.toFixed(2):'-',
+    r.metalDiff.toFixed(2)
+  ]);
+  doc.autoTable({
+    startY:y+2,
+    head:[['Process','Technician','Order','Type','Article','Metal','Qty','Stone type','Stone qty','Sent (g)','Return (g)','Diff (g)']],
+    body:rows,
+    theme:'grid',
+    headStyles:{fillColor:[27,77,140],fontSize:8,halign:'left'},
+    bodyStyles:{fontSize:8},
+    margin:{left:14,right:14},
+    tableLineWidth:0.1
+  });
+  doc.save('gold-loss-'+today.replace(/\//g,'-')+'.pdf');
+  P_toast('PDF exported');
+}
+
+function P_renderAll(){PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();GL_render();}
 P_loadData();P_renderAll();
 
 
